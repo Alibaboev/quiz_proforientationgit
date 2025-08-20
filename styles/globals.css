@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body, html {
+    height: 100%;
+}
+
+.gradientBorderFix {
+    background: linear-gradient(#1A3B76, #1A3B76) padding-box,
+                linear-gradient(to right, #415c8d, #132A55) border-box;
+    border-radius: 1em;
+    border: 1px solid transparent;
+
+    transition-property: box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 300ms;
+}
+
+.gradientBorderFix:hover {
+    box-shadow: 0 0 19.899999618530273px -5px #36B5FF;
+}
