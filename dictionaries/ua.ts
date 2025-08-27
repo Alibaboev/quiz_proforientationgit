@@ -17,8 +17,8 @@ import alu4 from "@/public/Rectangle 345.png";
 import {uniLogos} from "@/components/data";
 
 // 1. ИСПРАВЛЕННЫЙ ИМПОРТ: Используем абсолютный путь от корня проекта
-import { questions } from '@/dictionaries/proforientation/questions';
-import { prompts } from '@/dictionaries/proforientation/prompts';
+/* import { questions } from '@/dictionaries/proforientation/questions';
+import { prompts } from '@/dictionaries/proforientation/prompts'; */
 
 // Ваш существующий код
 const cardsTextUK = [
@@ -129,8 +129,8 @@ export const textUA = {
     },
     // ОСЬ НОВИЙ РОЗДІЛ ДЛЯ КВІЗУ:
     "proforientation": {
-        questions: questions,
-        prompts: prompts,
+/*         questions: questions,
+        prompts: prompts, */
         // Тексти для інтерфейсу квізу
         startTitle: "🎯 Обери професію та університет мрії в Чехії — за 5 хвилин",
         startSubtitle: "Відповідай на 3 простих запитання — і отримай підбірку спеціальностей та університетів, які підійдуть саме тобі.",

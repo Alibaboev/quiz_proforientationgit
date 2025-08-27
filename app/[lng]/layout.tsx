@@ -44,7 +44,6 @@ export default function RootLayout({children, params}: RootLayoutParams) {
         <FacebookPixel ids={fbPixelsIds}/>
         <TiktokPixel id={process.env.NEXT_PUBLIC_TIKTOK_PIXEL_ID || ""}/>
         <GoogleTagManager containerId={containerId}/>
-
         <SpeedInsights/>
         <Analytics/>
         </body>
