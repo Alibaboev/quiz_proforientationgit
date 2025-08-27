@@ -1,6 +1,9 @@
 "use client";
 import React, { useState } from "react";
-import { questions as allQuestions } from "@/dictionaries/quizDictionary";
+import { questions, type Question, type Option } from "@/dictionaries/quizDictionary";
+import { AnswerButton } from "../ui/AnswerButton";
+import { ProgressBar } from "../ui/ProgressBar";
+import { Button } from "../ui/Button";
 
 export function QuizScreen({
   role,
@@ -9,16 +12,38 @@ export function QuizScreen({
 }: {
   role: string;
   educationLevel: string;
-  onComplete: (answers: any[]) => void;
+  onComplete: (answers: { question: string; answer: string; tags?: string[] }[]) => void;
 }) {
-  const questionList = allQuestions[role][educationLevel] || [];
+  const questionList: Question[] =
+    role === "student"
+      ? questions.student[educationLevel as keyof typeof questions.student] || []
+      : role === "parent"
+        ? questions.parent.all
+        : [];
+
   const [index, setIndex] = useState(0);
-  const [answers, setAnswers] = useState<any[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [answers, setAnswers] = useState<{ question: string; answer: string; tags?: string[] }[]>([]);
   const current = questionList[index];
 
-  const handleAnswer = (answer: string) => {
-    const updated = [...answers, { question: current.question, answer }];
+  console.log("QUIZ", { role, educationLevel, questionList });
+
+  if (!current) {
+    onComplete(answers);
+    return null;
+  }
+
+  const handleAnswer = (opt: Option | string) => {
+    let record;
+    if (typeof opt === "string") {
+      record = { question: current.question, answer: opt };
+    } else {
+      record = { question: current.question, answer: opt.answers[0], tags: opt.tags };
+    }
+
+    const updated = [...answers, record];
     setAnswers(updated);
+
     if (index + 1 < questionList.length) {
       setIndex(index + 1);
     } else {
@@ -28,29 +53,27 @@ export function QuizScreen({
 
   return (
     <div className="quiz-container">
-      <div className="progress-bar-container">
-        <div
-          className="progress-bar-inner"
-          style={{ width: `${((index + 1) / questionList.length) * 100}%` }}
-        ></div>
-      </div>
+
+      <ProgressBar current={index + 1} total={questionList.length} />
+
       <p className="text-sm text-gray-500 mb-4">
         Питання {index + 1} з {questionList.length}
       </p>
+
       <h2 className="text-xl sm:text-2xl font-semibold text-center mb-6">
         {current.question}
       </h2>
 
-      {current.type === "multiple-choice" && (
+      {current.type === "multiple-choice" && current.options && (
         <div className="grid grid-cols-1 gap-4">
-          {current.options.map((opt: string, i: number) => (
-            <button
+          {current.options.map((opt, i) => (
+            <AnswerButton
               key={i}
               className="quiz-option"
               onClick={() => handleAnswer(opt)}
             >
-              {opt}
-            </button>
+              {opt.answers[0]}
+            </AnswerButton>
           ))}
         </div>
       )}
@@ -58,28 +81,18 @@ export function QuizScreen({
       {current.type === "open-ended" && (
         <div>
           <textarea
-            className="open-question-textarea mb-4"
+            className="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:outline-none focus:ring-2 focus:ring-[#00C0FD] focus:border-[#00C0FD] bg-gray-50"
             rows={4}
             placeholder="Ваша відповідь..."
-            onChange={(e) => {
-              const val = e.target.value.trim();
-              (document.getElementById("next-btn") as HTMLButtonElement).disabled =
-                val.length < 8;
-            }}
+            onChange={(e) => setInputValue(e.target.value)}
           />
-          <button
-            id="next-btn"
-            disabled
+          <Button
             className="btn btn-primary w-full sm:w-auto"
-            onClick={() => {
-              const val = (
-                document.querySelector("textarea") as HTMLTextAreaElement
-              ).value.trim();
-              handleAnswer(val);
-            }}
+            disabled={inputValue.trim().length < 8}
+            onClick={() => handleAnswer(inputValue.trim())}
           >
             Далі
-          </button>
+          </Button>
         </div>
       )}
     </div>

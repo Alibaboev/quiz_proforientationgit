@@ -73,7 +73,7 @@ export default function QuizPage({ params: { lng } }: QuizPageProps) {
                     isMultilang={true}
                 />
                 
-                <div className="flex flex-1 items-center justify-center px-4">
+                <div className="flex flex-1 items-center justify-center px-4 py-8">
                     <div className="bg-white p-6 sm:p-8 rounded-xl shadow-lg w-full max-w-2xl border border-gray-200 text-center">
                         {step === "start" && <StartScreen onStart={handleStart} />}
                         {step === "role" && <RoleSelection onSelect={handleRoleSelect} />}
