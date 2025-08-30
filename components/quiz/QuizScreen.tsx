@@ -1,65 +1,70 @@
 "use client";
-import React, { useState } from "react";
-import { questions, type Question, type Option } from "@/dictionaries/quizDictionary";
+import React, { useState, useEffect } from "react";
 import { AnswerButton } from "../ui/AnswerButton";
 import { ProgressBar } from "../ui/ProgressBar";
 import { Button } from "../ui/Button";
+import { useQuiz } from "@/context/QuizContext";
+import { useTranslations } from "next-intl";
 
-export function QuizScreen({
-  role,
-  educationLevel,
-  onComplete,
-}: {
-  role: string;
-  educationLevel: string;
-  onComplete: (answers: { question: string; answer: string; tags?: string[] }[]) => void;
-}) {
-  const questionList: Question[] =
-    role === "student"
-      ? questions.student[educationLevel as keyof typeof questions.student] || []
-      : role === "parent"
-        ? questions.parent.all
-        : [];
-
-  const [index, setIndex] = useState(0);
+export function QuizScreen() {
+  const { questions, role, level, currentIndex, setCurrentIndex, setAnswers, answers, setStep } = useQuiz();
   const [inputValue, setInputValue] = useState("");
-  const [answers, setAnswers] = useState<{ question: string; answer: string; tags?: string[] }[]>([]);
-  const current = questionList[index];
+  const t = useTranslations("QuizScreen");
 
-  console.log("QUIZ", { role, educationLevel, questionList });
+  if (!role) return <p>Role not selected</p>;
 
-  if (!current) {
-    onComplete(answers);
-    return null;
+
+  const roleQuestions = questions?.[role as keyof typeof questions] || {};
+
+  let questionList: any[] = [];
+
+  if (level && (roleQuestions as Record<string, any>)[level]) {
+
+    questionList = (roleQuestions as Record<string, any>)[level];
+  } else if ((roleQuestions as Record<string, any>)["all"]) {
+
+    questionList = (roleQuestions as Record<string, any>)["all"];
+  } else {
+    questionList = [];
   }
 
-  const handleAnswer = (opt: Option | string) => {
-    let record;
-    if (typeof opt === "string") {
-      record = { question: current.question, answer: opt };
-    } else {
-      record = { question: current.question, answer: opt.answers[0], tags: opt.tags };
+  const current = questionList[currentIndex];
+
+  useEffect(() => {
+    if (!current && questionList.length > 0) {
+      setStep("form");
     }
+  }, [current, questionList.length, setStep]);
 
-    const updated = [...answers, record];
-    setAnswers(updated);
+  const handleAnswer = (opt: any) => {
+    if (!current) return;
 
-    if (index + 1 < questionList.length) {
-      setIndex(index + 1);
+    const record =
+      typeof opt === "string"
+        ? { question: current.question, answer: opt }
+        : { question: current.question, answer: opt.answers[0], tags: opt.tags };
+
+    setAnswers([...answers, record]);
+
+    if (currentIndex + 1 < questionList.length) {
+      setCurrentIndex(currentIndex + 1);
+      setInputValue("");
     } else {
-      onComplete(updated);
+      setStep("form");
     }
   };
 
+  if (!current) return null;
+
   return (
     <div className="quiz-container">
-
-      <ProgressBar current={index + 1} total={questionList.length} />
-
+      <ProgressBar current={currentIndex + 1} total={questionList.length} />
       <p className="text-sm text-gray-500 mb-4">
-        Питання {index + 1} з {questionList.length}
+        {t("progress", {
+          current: currentIndex + 1,
+          total: questionList.length
+        })}
       </p>
-
       <h2 className="text-xl sm:text-2xl font-semibold text-center mb-6">
         {current.question}
       </h2>
@@ -83,15 +88,16 @@ export function QuizScreen({
           <textarea
             className="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:outline-none focus:ring-2 focus:ring-[#00C0FD] focus:border-[#00C0FD] bg-gray-50"
             rows={4}
-            placeholder="Ваша відповідь..."
+            placeholder={t("placeholder")}
+            value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
           <Button
-            className="btn btn-primary w-full sm:w-auto"
-            disabled={inputValue.trim().length < 8}
+            className="btn btn-primary w-full sm:w-auto mt-3"
+            disabled={inputValue.trim().length < 1}
             onClick={() => handleAnswer(inputValue.trim())}
           >
-            Далі
+            {t("buttonNext")}
           </Button>
         </div>
       )}

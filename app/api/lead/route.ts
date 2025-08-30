@@ -1,4 +1,4 @@
-// /app/api/lead/route.ts
+/* // /app/api/lead/route.ts
 
 import { NextRequest, NextResponse } from "next/server";
 import parsePhoneNumber from "libphonenumber-js";
@@ -84,3 +84,4 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ message: "An internal server error occurred." }, { status: 500 });
   }
 }
+ */

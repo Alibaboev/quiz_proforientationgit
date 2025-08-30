@@ -1,38 +1,37 @@
 "use client";
 import React from "react";
 import { AnswerButton } from "../ui/AnswerButton";
+import { useTranslations } from "next-intl";
+import { useQuiz } from "@/context/QuizContext";
 
-export function EducationLevelSelection({
-    role,
-    onSelect,
-}: {
-    role: string;
-    onSelect: (level: string) => void;
-}) {
-    if (role === "parent") {
-        return (
-            <div className="quiz-container">
-                <h2 className="mb-6">Для кого ви проходите тест?</h2>
-                <button
-                    className="quiz-option"
-                    onClick={() => onSelect("parent_view")}
-                >
-                    Учень / студент
-                </button>
-            </div>
-        );
-    }
+export function EducationLevelSelection() {
+  const t = useTranslations("EducationLevelSelection");
+  const { questions, role, setLevel, setStep, loading, error } = useQuiz();
 
-    return (
-        <div className="quiz-container">
-            <h2 className="mb-6">Вас цікавить вступ після:</h2>
-            <div className="grid grid-cols-1 gap-4">
-                <AnswerButton onClick={() => onSelect("grade_9")}>9 класу</AnswerButton>
-                <AnswerButton onClick={() => onSelect("grade_11")}>11 класу</AnswerButton>
-                <AnswerButton onClick={() => onSelect("bachelor")}>бакалавріату</AnswerButton>
-                <AnswerButton onClick={() => onSelect("undecided")}>ще не визначився</AnswerButton>
-            </div>
+  if (loading) return <p>Loading...</p>;
+  if (error || !questions || !role) return <p>Error loading questions</p>;
 
-        </div>
-    );
+  const levels = Object.keys(questions[role] || {}) as string[];
+
+  const handleSelect = (level: string) => {
+    setLevel(level);
+    setStep("personalization");
+  };
+
+  return (
+    <div className="quiz-container">
+      <h2 className="mb-6">{t(`${role}.title`)}</h2>
+      <div className="grid grid-cols-1 gap-4">
+        {levels.map((level) => (
+          <AnswerButton
+            key={level}
+            onClick={() => handleSelect(level)}
+            className="quiz-option"
+          >
+            {t(`${role}.options.${level}`)}
+          </AnswerButton>
+        ))}
+      </div>
+    </div>
+  );
 }
