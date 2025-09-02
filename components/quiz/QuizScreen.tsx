@@ -11,23 +11,7 @@ export function QuizScreen() {
   const [inputValue, setInputValue] = useState("");
   const t = useTranslations("QuizScreen");
 
-  if (!role) return <p>Role not selected</p>;
-
-
-  const roleQuestions = questions?.[role as keyof typeof questions] || {};
-
   let questionList: any[] = [];
-
-  if (level && (roleQuestions as Record<string, any>)[level]) {
-
-    questionList = (roleQuestions as Record<string, any>)[level];
-  } else if ((roleQuestions as Record<string, any>)["all"]) {
-
-    questionList = (roleQuestions as Record<string, any>)["all"];
-  } else {
-    questionList = [];
-  }
-
   const current = questionList[currentIndex];
 
   useEffect(() => {
@@ -35,6 +19,18 @@ export function QuizScreen() {
       setStep("form");
     }
   }, [current, questionList.length, setStep]);
+
+  if (!role) return <p>Role not selected</p>;
+
+  const roleQuestions = questions?.[role as keyof typeof questions] || {};
+
+  if (level && (roleQuestions as Record<string, any>)[level]) {
+    questionList = (roleQuestions as Record<string, any>)[level];
+  } else if ((roleQuestions as Record<string, any>)["all"]) {
+    questionList = (roleQuestions as Record<string, any>)["all"];
+  } else {
+    questionList = [];
+  }
 
   const handleAnswer = (opt: any) => {
     if (!current) return;
