@@ -3,16 +3,20 @@ import React, { useState } from "react";
 import { Button } from "../ui/Button";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
+import { promptsData } from "@/dictionaries/promptsDictionary";
+import { useLocale } from "next-intl";
+import { buildPrompt } from "@/utils/buildPrompt";
 
 export function LeadCaptureForm({
   onSubmit,
 }: {
   onSubmit: (data: { name: string; email: string }) => void;
 }) {
-  const { answers, setStep } = useQuiz();
+  const { answers, setStep, role, level } = useQuiz();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const t = useTranslations("LeadCaptureForm");
+  const locale = useLocale() || "uk";
 
   const previewReport = (
     <div className="preview-content text-left text-gray-700 p-4 border rounded-lg bg-gray-50 blur-sm select-none">
@@ -31,32 +35,65 @@ export function LeadCaptureForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const payload = { name, email, answers };
-    console.log("Submitting form data:", payload);
-
-    try {
-      const res = await fetch("/api/sendEmail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-      if (res.ok) {
-        console.log("Email sent successfully:", result);
-        alert("Форма успешно отправлена!");
-        setStep("thankyou");
-      } else {
-        console.error("Email sending error:", result);
-        alert("Ошибка при отправке формы");
-      }
-    } catch (err) {
-      console.error("Fetch error:", err);
-      alert("Ошибка сети при отправке формы");
+    if (!role || !level) {
+      alert("Невозможно сгенерировать отчёт: отсутствуют роль или уровень.");
+      return;
     }
 
+    try {
+      // handleSubmit
+      const finalPrompt = buildPrompt({ role, level, answers, locale: locale as "en" | "uk" | "ru" });
+
+      const reportRes = await fetch("/api/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptText: finalPrompt }),
+      });
+
+      const reportData = await reportRes.json();
+
+      if (!reportRes.ok) throw new Error(reportData?.error || "Report generation failed");
+
+      // Берём текст Gemini и чистим сразу
+      let rawText = reportData.report?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const cleanedHtml = rawText
+        .replace(/```html\s*/, "")
+        .replace(/```/, "")
+        .replace(/<head[\s\S]*?<\/head>/gi, "")
+        .replace(/<body[^>]*>/gi, "")
+        .replace(/<\/body>/gi, "")
+        .replace(/<\/?html[^>]*>/gi, "")
+        .trim();
+
+      // Отправляем сразу готовый HTML
+      const emailRes = await fetch("/api/sendEmail", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          email,
+          html: cleanedHtml,
+          subject: "Ваш персонализированный отчёт",
+        }),
+      });
+
+      const emailData = await emailRes.json();
+      if (!emailRes.ok) {
+        throw new Error(emailData?.error || "Email sending failed");
+      }
+
+      alert("Отчёт сгенерирован и отправлен на почту!");
+      setStep("thankyou");
+    } catch (err) {
+      console.error("Error during report generation or email sending:", err);
+      alert("Ошибка при генерации или отправке отчёта");
+    }
+
+    // вызов onSubmit родителя (если нужно)
     onSubmit({ name, email });
   };
+
+
 
   return (
     <div className="quiz-container text-left">

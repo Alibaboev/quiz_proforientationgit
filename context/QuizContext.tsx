@@ -4,9 +4,15 @@ import { getQuestions, type QuizSource } from "@/services/quizService";
 import type { QuestionBank } from "@/dictionaries/quizDictionary";
 import { useLocale } from "next-intl";
 
-export type Step = "start" | "role" | "education" | "personalization" | "quiz" | "form" | "thankyou";
 
-type Answer = { question: string; answer: string; tags?: string[] };
+export type Answer = {
+  question: string;
+  answer: string;
+  tags?: string[];
+};
+
+
+export type Step = "start" | "role" | "education" | "personalization" | "quiz" | "form" | "thankyou";
 
 type QuizContextType = {
   step: Step;
@@ -41,7 +47,7 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   // 👇 указываем источник "local" | "api" 
 
   const source: QuizSource = "local";
-  const locale = useLocale() || "ua";
+  const locale = useLocale() || "uk";
 
   useEffect(() => {
     setLoading(true);

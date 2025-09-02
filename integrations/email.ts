@@ -16,9 +16,9 @@ if (!API_KEY) throw new Error('SENDGRID_API_KEY is not set');
 
 sgMail.setApiKey(API_KEY);
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@example.com';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'noreplay@medstudy.cz';
 const FROM_NAME = process.env.EMAIL_FROM_NAME || 'Quiz Service';
-const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || 'support@example.com';
+const DEFAULT_REPLY_TO = process.env.EMAIL_REPLY_TO || 'sales@medstudy.cz';
 
 async function sendWithRetry(message: MailDataRequired, attempts = 3): Promise<void> {
   for (let i = 1; i <= attempts; i++) {
@@ -53,9 +53,10 @@ export async function sendEmail({
     html,
     ...(text ? { text } : {}),
     categories: [category],
-    mailSettings: {
-      sandboxMode: { enable: Boolean(sandbox) },
-    },
+    /*     mailSettings: {
+          sandboxMode: { enable: Boolean(sandbox) },
+        }, */
+    mailSettings: { sandboxMode: { enable: false } },
     trackingSettings: {
       clickTracking: { enable: true, enableText: true },
       openTracking: { enable: true },
