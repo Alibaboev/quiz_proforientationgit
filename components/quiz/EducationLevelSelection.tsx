@@ -11,7 +11,9 @@ export function EducationLevelSelection() {
   if (loading) return <p>Loading...</p>;
   if (error || !questions || !role) return <p>Error loading questions</p>;
 
-  const levels = Object.keys(questions[role] || {}) as string[];
+  /*   const levels = Object.keys(questions [role] || {}) as string[]; */
+  const levels = Object.keys((questions as Record<string, any>)?.[role] || {});
+
 
   const handleSelect = (level: string) => {
     setLevel(level);

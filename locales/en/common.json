@@ -71,8 +71,16 @@
     "form": {
       "nameLabel": "Your name",
       "emailLabel": "Email to receive results",
-      "submit": "Get the report by email"
+      "submit": "Get the report by email",
+      "sending": "Sending..."
     }
+  },
+  "ThankYouScreen": {
+    "emoji": "🎉",
+    "title": "Thank you!",
+    "message1": "Your personalized recommendations are on their way! Check the email you provided.",
+    "message2": "While you wait, you can explore our programs on  ",
+    "linkText": "the main website"
   },
   "QuizScreen": {
     "placeholder": "Your answer...",

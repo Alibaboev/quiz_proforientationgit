@@ -23,6 +23,7 @@ export interface QuestionBankLanguage {
     undecided: Question[];
   };
   parent: {
+    
     all: Question[];
   };
 }

@@ -1,12 +1,11 @@
 import { promptsData, langInstructions, Locale, PromptKey } from "@/dictionaries/promptsDictionary";
 import type { Answer } from "@/context/QuizContext";
+import { DirectionType, educationalInstitutionsDictionary, SchoolDirectionType } from "@/dictionaries/educationalInstitutionsDictionary";
 
-// Функция объединяет все поля шаблона в одну строку
 function joinTemplateFields(template: Record<string, string>): string {
   return Object.values(template).join("\n\n");
 }
 
-// Функция для определения топ-направления по тегам
 function getTopDirectionTag(answers: Answer[]): string {
   const tagCount: Record<string, number> = {};
   answers.forEach((a) => {
@@ -15,7 +14,7 @@ function getTopDirectionTag(answers: Answer[]): string {
     });
   });
   const sortedTags = Object.entries(tagCount).sort((a, b) => b[1] - a[1]);
-  return sortedTags[0]?.[0] || "MED"; // default MED если нет тегов
+  return sortedTags[0]?.[0] || "MED";
 }
 
 export function buildPrompt({
@@ -29,6 +28,7 @@ export function buildPrompt({
   answers: Answer[];
   locale: Locale;
 }): string {
+
   // Определяем ключ шаблона
   const key: PromptKey = role === "parent" ? "parent" : (`student_${level}` as PromptKey);
 
@@ -43,6 +43,13 @@ export function buildPrompt({
   const topDirectionTag = getTopDirectionTag(answers);
   const dirLabels = promptsData[locale].DIR_LABELS as Record<string, string>;
   const topDirection = dirLabels[topDirectionTag] ?? topDirectionTag;
+
+  // Получаем соответствующие университеты и школы
+  const topUniDirection = topDirectionTag as DirectionType;
+  const topSchoolDirection = topDirectionTag as SchoolDirectionType;
+
+  const uniList = educationalInstitutionsDictionary.UNI[topUniDirection];
+  const schoolList = educationalInstitutionsDictionary.SCHOOL_TYPES[topSchoolDirection];
 
   // Объединяем все поля шаблона
   let templateText = joinTemplateFields(template);
@@ -64,15 +71,21 @@ ${templateText}
 
 Вот ответы пользователя:
 ${answers
-  .map((a) => {
-    const tagsText = a.tags
-      ?.map((tag) => dirLabels[tag as keyof typeof dirLabels] ?? tag)
-      .filter(Boolean)
-      .join(", ") || "нет";
+      .map((a) => {
+        const tagsText = a.tags
+          ?.map((tag) => dirLabels[tag as keyof typeof dirLabels] ?? tag)
+          .filter(Boolean)
+          .join(", ") || "нет";
 
-    return `Вопрос: "${a.question}"\nОтвет: "${a.answer}"\nТеги: ${tagsText}`;
-  })
-  .join("\n\n")}
+        return `Вопрос: "${a.question}"\nОтвет: "${a.answer}"\nТеги: ${tagsText}`;
+      })
+      .join("\n\n")}
+  
+  Университети:
+${uniList.map(u => `${u.name}: ${u.faculties.join(", ")}`).join("\n")}
+
+Школы:
+${schoolList.join("\n")}
 
 ${langInstruction}
 `;

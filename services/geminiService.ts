@@ -22,6 +22,5 @@ export async function generateReport(prompt: string) {
   }
 
   const data = await res.json();
-  // Gemini обычно кладет результат в data.candidates[0].content.parts[0].text
   return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }

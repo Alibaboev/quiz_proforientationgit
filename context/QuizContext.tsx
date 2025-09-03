@@ -64,9 +64,11 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
 
 
   const currentQuestion =
-    role && level && questions?.[role] && questions[role][level as keyof typeof questions[typeof role]]
-      ? questions[role][level as keyof typeof questions[typeof role]][currentIndex]
+    role && level && questions?.[role as keyof QuestionBank] &&
+      (questions[role as keyof QuestionBank] as Record<string, any>)[level]
+      ? (questions[role as keyof QuestionBank] as Record<string, any>)[level][currentIndex]
       : null;
+
 
   return (
     <QuizContext.Provider

@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { Button } from "../ui/Button";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
-import { promptsData } from "@/dictionaries/promptsDictionary";
 import { useLocale } from "next-intl";
 import { buildPrompt } from "@/utils/buildPrompt";
 
@@ -32,6 +31,8 @@ export function LeadCaptureForm({
     </div>
   );
 
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -41,7 +42,8 @@ export function LeadCaptureForm({
     }
 
     try {
-      // handleSubmit
+      setLoading(true); 
+
       const finalPrompt = buildPrompt({ role, level, answers, locale: locale as "en" | "uk" | "ru" });
 
       const reportRes = await fetch("/api/report", {
@@ -51,10 +53,8 @@ export function LeadCaptureForm({
       });
 
       const reportData = await reportRes.json();
-
       if (!reportRes.ok) throw new Error(reportData?.error || "Report generation failed");
 
-      // Берём текст Gemini и чистим сразу
       let rawText = reportData.report?.candidates?.[0]?.content?.parts?.[0]?.text || "";
       const cleanedHtml = rawText
         .replace(/```html\s*/, "")
@@ -65,7 +65,6 @@ export function LeadCaptureForm({
         .replace(/<\/?html[^>]*>/gi, "")
         .trim();
 
-      // Отправляем сразу готовый HTML
       const emailRes = await fetch("/api/sendEmail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -78,21 +77,17 @@ export function LeadCaptureForm({
       });
 
       const emailData = await emailRes.json();
-      if (!emailRes.ok) {
-        throw new Error(emailData?.error || "Email sending failed");
-      }
+      if (!emailRes.ok) throw new Error(emailData?.error || "Email sending failed");
 
-      alert("Отчёт сгенерирован и отправлен на почту!");
       setStep("thankyou");
     } catch (err) {
       console.error("Error during report generation or email sending:", err);
-      alert("Ошибка при генерации или отправке отчёта");
+    } finally {
+      setLoading(false); 
     }
 
-    // вызов onSubmit родителя (если нужно)
     onSubmit({ name, email });
   };
-
 
 
   return (
@@ -137,8 +132,8 @@ export function LeadCaptureForm({
           />
         </div>
         <div className="flex justify-center">
-          <Button type="submit" className="btn btn-primary text-lg px-8 py-3">
-            {t("form.submit")}
+          <Button type="submit" className="btn btn-primary text-lg px-8 py-3" disabled={loading}>
+            {loading ? t("form.sending") : t("form.submit")}
           </Button>
         </div>
       </form>

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: `%s - ${siteConfig.name}`,
   },
   description: siteConfig.description,
-/*   icons: { icon: "/favicon.webp" }, */
+  icons: { icon: "/favicon.webp" },
 };
 
 type RootLayoutParams = {

@@ -1,4 +1,3 @@
-// app/api/sendEmail/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/integrations/email";
 
@@ -11,13 +10,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Отправка письма через интеграцию SendGrid
     const success = await sendEmail({
       to: email,
       subject,
       html,
-      // текстовое поле можно не передавать, если html уже готов
-      text: html.replace(/<\/?[^>]+(>|$)/g, ""), // простая очистка HTML для текстовой версии
+      text: html.replace(/<\/?[^>]+(>|$)/g, ""), 
     });
 
     if (!success) {
