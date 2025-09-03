@@ -1,5 +1,8 @@
 import * as React from "react";
-import {IconSvgProps} from "@/types";
+
+type IconSvgProps = React.SVGProps<SVGSVGElement> & {
+  size?: number | string;
+};
 
 export const Logo: React.FC<IconSvgProps> = ({
                                                  size = 36,

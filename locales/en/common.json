@@ -1,0 +1,93 @@
+{
+  "StartScreen": {
+    "title": "🎯 Choose your dream profession and university in the Czech Republic — in 5 minutes",
+    "description": "Answer 7 simple questions and get a selection of specialties and universities that suit you best. Over 1000 applicants have already found their path with our AI test.",
+    "button": "Start Test",
+    "footer": "AI and our consultants have already helped hundreds of students enroll on a budget in the Czech Republic.",
+    "feature1": "✅ Free",
+    "feature2": "⏱ Only 5 minutes",
+    "feature3": "🎓 Expert recommendations"
+  },
+  "RoleSelection": {
+    "title": "Who is taking the test now?",
+    "student": "I am a student",
+    "parent": "I am a parent",
+    "studentIcon": "🎓",
+    "parentIcon": "👨‍👩‍👧‍👦"
+  },
+  "EducationLevelSelection": {
+    "student": {
+      "title": "What is your current level of education?",
+      "options": {
+        "grade_9": "After 9th grade",
+        "grade_11": "After 11th grade",
+        "bachelor": "Bachelor's degree",
+        "undecided": "Not decided yet"
+      }
+    },
+    "parent": {
+      "title": "Are you choosing for your child?",
+      "options": {
+        "all": "I want to choose a university for my child"
+      }
+    }
+  },
+  "PersonalizationScreen": {
+    "loading": "Preparing your personalized test..."
+  },
+  "leadCapture": {
+    "title": "Test completed!",
+    "subtitle": "Your AI report is almost ready. Get a selection of specialties and faculties tailored just for you.",
+    "preview": {
+      "heading": "Your direction",
+      "paragraph": "Based on your answers, the most suitable path is <b>Humanities</b>. This will help you choose a study profile after 9th grade.",
+      "schools": "Recommended types of schools",
+      "schoolList": [
+        "Humanities Gymnasium",
+        "Pedagogical School",
+        "Social Sciences Lyceum"
+      ],
+      "advice": "Tip: during the consultation we will suggest specific schools and explain the application deadlines."
+    },
+    "button": "Get the report"
+  },
+  "LeadCaptureForm": {
+    "title": "Test completed!",
+    "subtitle": "Your AI report is almost ready. Get a selection of specialties and faculties just for you.",
+    "preview": {
+      "title": "Your direction",
+      "description": "Based on your answers, the Humanities track suits you best. This will help you choose a study profile after 9th grade.",
+      "schoolsTitle": "Recommended school types",
+      "schools1": "Humanities Gymnasium",
+      "schools2": "Pedagogical School",
+      "schools3": "Social Sciences Lyceum",
+      "note": "Tip: during consultation, we will suggest specific schools and explain application deadlines."
+    },
+    "previewLabel": "We will send the full report to your email",
+    "listItem1": "What and where to study in Czechia",
+    "listItem2": "3 universities + 6 faculties",
+    "listItem3": "Steps for the next 2 weeks",
+    "privacyNote": "Your data is protected. No spam. You can unsubscribe in one click.",
+    "form": {
+      "nameLabel": "Your name",
+      "emailLabel": "Email to receive results",
+      "submit": "Get the report by email",
+      "sending": "Sending..."
+    }
+  },
+  "ThankYouScreen": {
+    "emoji": "🎉",
+    "title": "Thank you!",
+    "message1": "Your personalized recommendations are on their way! Check the email you provided.",
+    "message2": "While you wait, you can explore our programs on  ",
+    "linkText": "the main website"
+  },
+  "QuizScreen": {
+    "placeholder": "Your answer...",
+    "buttonNext": "Next",
+    "progress": "Question {current} of {total}"
+  },
+  "footer": {
+    "moto": "We prepare applicants \n for admission to Czech universities!"
+  }
+}

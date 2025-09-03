@@ -1,8 +1,4 @@
-// /integrations/gemini.ts
-// ВАЖНО: в API-роуте (например, /app/api/report/route.ts) укажи:
-// export const runtime = 'nodejs';
-
-import 'server-only';
+/* import 'server-only';
 
 import {
   GoogleGenerativeAI,
@@ -225,3 +221,4 @@ export async function generateReport(params: GenerateReportParams): Promise<ApiR
     return { ok: false, error: 'Failed to generate the report.' };
   }
 }
+ */

@@ -15,7 +15,7 @@ const FacebookPixel = ({ids} : FacebookPixelProps) => {
     useEffect(() => {
         if (!loaded) return;
 
-        if(pathname == "/ua/webinar"){
+        if(pathname == "/uk/webinar"){
            pixel.pageview("webinar")
             return;
         }
@@ -25,7 +25,7 @@ const FacebookPixel = ({ids} : FacebookPixelProps) => {
             return;
         }
 
-        if(pathname == "/ua/orientation") {
+        if(pathname == "/uk/orientation") {
             pixel.pageview("orientation")
         } else {
             pixel.pageview("landing")
