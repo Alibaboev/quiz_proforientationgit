@@ -72,7 +72,7 @@ export function LeadCaptureForm({
           name,
           email,
           html: cleanedHtml,
-          subject: "Ваш персонализированный отчёт",
+          subject: t("subject"),
         }),
       });
 
