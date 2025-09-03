@@ -7,13 +7,20 @@ import { useQuiz } from "@/context/QuizContext";
 import { useTranslations } from "next-intl";
 import type { Option } from "@/dictionaries/quizDictionary";
 
-
 export function QuizScreen() {
   const { questions, role, level, currentIndex, setCurrentIndex, setAnswers, answers, setStep } = useQuiz();
   const [inputValue, setInputValue] = useState("");
   const t = useTranslations("QuizScreen");
 
+  const roleQuestions = questions?.[role as keyof typeof questions] || {};
   let questionList: any[] = [];
+
+  if (level && (roleQuestions as Record<string, any>)[level]) {
+    questionList = (roleQuestions as Record<string, any>)[level];
+  } else if ((roleQuestions as Record<string, any>)["all"]) {
+    questionList = (roleQuestions as Record<string, any>)["all"];
+  }
+
   const current = questionList[currentIndex];
 
   useEffect(() => {
@@ -21,18 +28,6 @@ export function QuizScreen() {
       setStep("form");
     }
   }, [current, questionList.length, setStep]);
-
-  if (!role) return <p>Role not selected</p>;
-
-  const roleQuestions = questions?.[role as keyof typeof questions] || {};
-
-  if (level && (roleQuestions as Record<string, any>)[level]) {
-    questionList = (roleQuestions as Record<string, any>)[level];
-  } else if ((roleQuestions as Record<string, any>)["all"]) {
-    questionList = (roleQuestions as Record<string, any>)["all"];
-  } else {
-    questionList = [];
-  }
 
   const handleAnswer = (opt: any) => {
     if (!current) return;
@@ -69,7 +64,6 @@ export function QuizScreen() {
 
       {current.type === "multiple-choice" && current.options && (
         <div className="grid grid-cols-1 gap-4">
-          {/*           {current.options.map((opt, i) => ( */}
           {current.options.map((opt: Option, i: number) => (
             <AnswerButton
               key={i}

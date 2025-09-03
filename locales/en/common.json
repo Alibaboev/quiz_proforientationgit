@@ -54,6 +54,7 @@
   "LeadCaptureForm": {
     "title": "Test completed!",
     "subtitle": "Your AI report is almost ready. Get a selection of specialties and faculties just for you.",
+    "subject": "Your personalized report",
     "preview": {
       "title": "Your direction",
       "description": "Based on your answers, the Humanities track suits you best. This will help you choose a study profile after 9th grade.",
