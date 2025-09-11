@@ -1,4 +1,4 @@
-"use client"
+/* "use client"
 import {usePathname} from "next/navigation";
 import Script from "next/script";
 
@@ -11,4 +11,4 @@ export default function FormBitrix() {
    }
    // eslint-disable-next-line @next/next/no-sync-scripts
    return <script data-b24-form="click/114/ax87ra" data-skip-moving="true" src={"/bitrixUA.js"}></script>
-}
+} */

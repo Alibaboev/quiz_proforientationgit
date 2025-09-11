@@ -6,6 +6,8 @@ import { Button } from "../ui/Button";
 import { useQuiz } from "@/context/QuizContext";
 import { useTranslations } from "next-intl";
 import type { Option } from "@/dictionaries/quizDictionary";
+import { trackEvent } from "@/utils/analytics";
+import { sendEventToServer } from "@/utils/sendEvent";
 
 export function QuizScreen() {
   const { questions, role, level, currentIndex, setCurrentIndex, setAnswers, answers, setStep } = useQuiz();
@@ -29,15 +31,17 @@ export function QuizScreen() {
     }
   }, [current, questionList.length, setStep]);
 
-  const handleAnswer = (opt: any) => {
+  const handleAnswer = async (opt: any) => {
     if (!current) return;
 
-    const record =
-      typeof opt === "string"
-        ? { question: current.question, answer: opt }
-        : { question: current.question, answer: opt.answers[0], tags: opt.tags };
+    const answerValue = typeof opt === "string" ? opt : opt.answers[0];
+    const questionId = `q${currentIndex}`;
 
-    setAnswers([...answers, record]);
+    setAnswers([...answers, { question: questionId, answer: answerValue }]);
+
+    trackEvent("question_answered", { step: "question_answered", question: questionId, answer: answerValue });
+
+    await sendEventToServer({ step: "question_answered", question: questionId, answer: answerValue });
 
     if (currentIndex + 1 < questionList.length) {
       setCurrentIndex(currentIndex + 1);
@@ -53,10 +57,7 @@ export function QuizScreen() {
     <div className="quiz-container">
       <ProgressBar current={currentIndex + 1} total={questionList.length} />
       <p className="text-sm text-gray-500 mb-4">
-        {t("progress", {
-          current: currentIndex + 1,
-          total: questionList.length
-        })}
+        {t("progress", { current: currentIndex + 1, total: questionList.length })}
       </p>
       <h2 className="text-xl sm:text-2xl font-semibold text-center mb-6">
         {current.question}

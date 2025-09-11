@@ -6,6 +6,9 @@ import clsx from "clsx";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { QuizProvider } from "@/context/QuizContext";
+import Script from "next/script";
+import { GAInit } from "@/components/GAInit";
+import CookieConsent from "@/components/CookieConsent";
 
 export const metadata: Metadata = {
   title: {
@@ -23,9 +26,12 @@ type RootLayoutParams = {
 
 export default async function RootLayout({ children, params }: RootLayoutParams) {
   const messages = await getMessages({ locale: params.locale });
+  const gaId = process.env.NEXT_PUBLIC_GA_ID;
 
   return (
     <html lang={params.locale}>
+      <head>
+      </head>
       <body
         className={clsx(
           "min-h-screen flex flex-col bg-background font-sans antialiased",
@@ -35,6 +41,8 @@ export default async function RootLayout({ children, params }: RootLayoutParams)
         <NextIntlClientProvider locale={params.locale} messages={messages}>
           <QuizProvider>
             {children}
+            {gaId && <GAInit />}
+            <CookieConsent />
           </QuizProvider>
         </NextIntlClientProvider>
       </body>

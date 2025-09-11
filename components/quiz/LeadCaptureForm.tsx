@@ -5,6 +5,10 @@ import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
 import { useLocale } from "next-intl";
 import { buildPrompt } from "@/utils/buildPrompt";
+import { getUTMParams } from "@/utils/getUTMParams";
+import { formatAnswers } from "@/utils/formatAnswers";
+import { trackEvent } from "@/utils/analytics";
+import { sendEventToServer } from "@/utils/sendEvent";
 
 export function LeadCaptureForm({
   onSubmit,
@@ -16,8 +20,11 @@ export function LeadCaptureForm({
   const [email, setEmail] = useState("");
   const t = useTranslations("LeadCaptureForm");
   const locale = useLocale() || "uk";
+  const [loading, setLoading] = useState(false);
+  let emailSendError = "";
 
-  const previewReport = (
+
+    const previewReport = (
     <div className="preview-content text-left text-gray-700 p-4 border rounded-lg bg-gray-50 blur-sm select-none">
       <h3 className="font-semibold mb-2">{t("preview.title")}</h3>
       <p className="mb-2">{t("preview.description")}</p>
@@ -31,85 +38,110 @@ export function LeadCaptureForm({
     </div>
   );
 
-  const [loading, setLoading] = useState(false);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!role || !level) {
-      alert("Невозможно сгенерировать отчёт: отсутствуют роль или уровень.");
+      alert("Неможливо згенерувати звіт: відсутні роль або рівень.");
       return;
     }
 
     try {
-      setLoading(true); 
+      setLoading(true);
 
       const finalPrompt = buildPrompt({ role, level, answers, locale: locale as "en" | "uk" | "ru" });
 
-      const reportRes = await fetch("/api/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ promptText: finalPrompt }),
-      });
+      let cleanedHtml = "";
+      let reportOk = false;
 
-      const reportData = await reportRes.json();
-      if (!reportRes.ok) throw new Error(reportData?.error || "Report generation failed");
+      // 1. Генерация отчета
+      try {
+        const reportRes = await fetch("/api/report", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ promptText: finalPrompt }),
+        });
 
-      let rawText = reportData.report?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleanedHtml = rawText
-        .replace(/```html\s*/, "")
-        .replace(/```/, "")
-        .replace(/<head[\s\S]*?<\/head>/gi, "")
-        .replace(/<body[^>]*>/gi, "")
-        .replace(/<\/body>/gi, "")
-        .replace(/<\/?html[^>]*>/gi, "")
-        .trim();
+        const reportData = await reportRes.json();
+        if (reportRes.ok && reportData?.report?.candidates?.[0]?.content?.parts?.[0]?.text) {
+          const rawText = reportData.report.candidates[0].content.parts[0].text;
+          cleanedHtml = rawText
+            .replace(/```html\s*/, "")
+            .replace(/```/, "")
+            .replace(/<head[\s\S]*?<\/head>/gi, "")
+            .replace(/<body[^>]*>/gi, "")
+            .replace(/<\/body>/gi, "")
+            .replace(/<\/?html[^>]*>/gi, "")
+            .trim();
+          reportOk = true;
+        }
+      } catch (err) {
+        console.error("❌ Report generation failed:", err);
+        emailSendError = "❌ Report generation failed. The email was not sent. ";
+      }
 
-      const emailRes = await fetch("/api/sendEmail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          html: cleanedHtml,
-          subject: t("subject"),
-        }),
-      });
+      // 2. Отправка email
+      if (reportOk) {
+        try {
+          const emailRes = await fetch("/api/sendEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              email,
+              html: cleanedHtml,
+              subject: t("subject"),
+            }),
+          });
+          const emailData = await emailRes.json();
+          if (emailRes.ok) {
+            trackEvent("email_sent", { step: "email_sent ", type: "report" });
+          } else {
+            trackEvent("email_sent", { step: "email_sent ", type: "fallback" });
+          }
+        } catch (err) {
+          trackEvent("email_sent", { step: "email_sent ", type: "fallback" });
+          console.error("❌ Email send error:", err);
+        }
+      }
 
-      const emailData = await emailRes.json();
-      if (!emailRes.ok) throw new Error(emailData?.error || "Email sending failed");
+      // 3. Отправка лида в Bitrix
+      try {
+        await fetch("/api/bitrix", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "Quiz Lead",
+            name,
+            email,
+            source: "Proforientation quiz",
+            answers: emailSendError + formatAnswers(answers, locale as "en" | "uk" | "ru"),
+            utm: getUTMParams(),
+          }),
+        });
+      } catch (err) {
+        console.error("❌ Bitrix send error:", err);
+      }
 
       setStep("thankyou");
+      onSubmit({ name, email });
     } catch (err) {
-      console.error("Error during report generation or email sending:", err);
+      trackEvent("contact_form_submit", { step: "contact_form_submit", status: "error" });
+      sendEventToServer({ step: "contact_form_submit" });
+      console.error("Error during submit:", err);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
-
-    onSubmit({ name, email });
   };
-
 
   return (
     <div className="quiz-container text-left">
       <h2 className="text-center text-lg sm:text-xl font-semibold mb-2">{t("title")}</h2>
       <p className="text-center text-gray-700 mb-6">{t("subtitle")}</p>
-
-      <div className="preview-wrap mb-4">
-        {previewReport}
-        <span className="preview-label text-sm text-gray-500 block mt-1 text-center">
-          {t("previewLabel")}
-        </span>
-      </div>
-
-      <ul className="list-disc list-inside mb-6 text-gray-700">
-        <li>{t("listItem1")}</li>
-        <li>{t("listItem2")}</li>
-        <li>{t("listItem3")}</li>
-      </ul>
-
-      <p className="text-xs text-gray-500 mb-6 text-center">{t("privacyNote")}</p>
-
+      {previewReport}
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block font-semibold mb-2">{t("form.nameLabel")}</label>

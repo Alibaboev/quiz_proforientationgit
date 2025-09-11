@@ -91,4 +91,9 @@
   "footer": {
     "moto": "We prepare applicants \n for admission to Czech universities!"
   }
+  ,
+  "CookieConsent": {
+    "massage": "We use cookies for analytics and improving the service.",
+    "agree": "Agree"
+  }
 }

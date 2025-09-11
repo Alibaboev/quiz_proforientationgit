@@ -3,6 +3,8 @@ import React from "react";
 import { AnswerButton } from "../ui/AnswerButton";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
+import { trackEvent } from "@/utils/analytics";
+import { sendEventToServer } from "@/utils/sendEvent";
 
 export function EducationLevelSelection() {
   const t = useTranslations("EducationLevelSelection");
@@ -11,13 +13,14 @@ export function EducationLevelSelection() {
   if (loading) return <p>Loading...</p>;
   if (error || !questions || !role) return <p>Error loading questions</p>;
 
-  /*   const levels = Object.keys(questions [role] || {}) as string[]; */
   const levels = Object.keys((questions as Record<string, any>)?.[role] || {});
 
 
   const handleSelect = (level: string) => {
     setLevel(level);
     setStep("personalization");
+    trackEvent("quiz_start", { step: "quiz_start" });
+    sendEventToServer({ step: "quiz_start" });
   };
 
   return (
