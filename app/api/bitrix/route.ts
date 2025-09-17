@@ -14,7 +14,7 @@ export async function POST(req: Request) {
       EMAIL: [{ VALUE_TYPE: "WORK", VALUE: body.email }] as any,
       ANSWERS: body.report + " " + body.answers,
       // Источник
-      SOURCE: body.source,
+      SOURCE_ID: body.source_id,
       
       // UTM
       UTM_SOURCE: body.utm?.source,

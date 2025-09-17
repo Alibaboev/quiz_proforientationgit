@@ -4,15 +4,17 @@ import { AnswerButton } from "../ui/AnswerButton";
 import { ProgressBar } from "../ui/ProgressBar";
 import { Button } from "../ui/Button";
 import { useQuiz } from "@/context/QuizContext";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { Option } from "@/dictionaries/quizDictionary";
 import { trackEvent } from "@/utils/analytics";
 import { sendEventToServer } from "@/utils/sendEvent";
+import { buildPrompt } from "@/utils/buildPrompt";
 
 export function QuizScreen() {
-  const { questions, role, level, currentIndex, setCurrentIndex, setAnswers, answers, setStep } = useQuiz();
+  const { questions, role, level, currentIndex, setCurrentIndex, setAnswers, answers, setStep, setReportPromise } = useQuiz();
   const [inputValue, setInputValue] = useState("");
   const t = useTranslations("QuizScreen");
+  const locale = useLocale() || "uk";
 
   const roleQuestions = questions?.[role as keyof typeof questions] || {};
   let questionList: any[] = [];
@@ -39,15 +41,61 @@ export function QuizScreen() {
 
     setAnswers([...answers, { question: questionId, answer: answerValue }]);
 
-    trackEvent("question_answered", { step: "question_answered", question: questionId, answer: answerValue });
+    const payload = {
+      step: "Question_answered",
+      question: questionId,
+      question_text: current.question,
+      answer: answerValue,
+    };
 
-    await sendEventToServer({ step: "question_answered", question: questionId, answer: answerValue });
+    trackEvent("Question_answered", payload);
+    await sendEventToServer(payload);
 
     if (currentIndex + 1 < questionList.length) {
       setCurrentIndex(currentIndex + 1);
       setInputValue("");
     } else {
-      setStep("form");
+      // 📌 генерим промис отчета
+      const finalPrompt = buildPrompt({ role: role!, level: level!, answers: [...answers, { question: `q${currentIndex}`, answer: opt }], locale: locale as "en" | "uk" | "ru" });
+
+      const reportPromise = (async () => {
+        try {
+          const res = await fetch("/api/report", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ promptText: finalPrompt }),
+          });
+          const data = await res.json();
+          if (res.ok && data?.report?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            return data.report.candidates[0].content.parts[0].text
+              .replace(/```html\s*/, "")
+              .replace(/```/, "")
+              .replace(/<head[\s\S]*?<\/head>/gi, "")
+              .replace(/<body[^>]*>/gi, "")
+              .replace(/<\/body>/gi, "")
+              .replace(/<\/?html[^>]*>/gi, "")
+              .trim();
+          }
+        } catch (e) {
+          console.error("❌ Gemini report error:", e);
+        }
+        return null;
+      })();
+
+      setReportPromise(reportPromise);
+
+      const quizCompletePayload = {
+        step: "Quiz_complete",
+        completion_time: Math.round(performance.now() / 1000), 
+        user_role: role,
+        education_level: level,
+      };
+
+      trackEvent("Quiz_complete", quizCompletePayload);
+      sendEventToServer(quizCompletePayload);
+
+
+      setStep("form"); 
     }
   };
 

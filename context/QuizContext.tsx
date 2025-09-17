@@ -29,6 +29,12 @@ type QuizContextType = {
   questions: QuestionBank | null;
   loading: boolean;
   error: string | null;
+  reportPromise: Promise<string | null> | null;
+  setReportPromise: React.Dispatch<
+    React.SetStateAction<Promise<string | null> | null>
+  >;
+  reportHtml: string | null;
+  setReportHtml: React.Dispatch<React.SetStateAction<string | null>>;
 };
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
@@ -42,6 +48,9 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [questions, setQuestions] = useState<QuestionBank | null>(null);
+  const [reportPromise, setReportPromise] = useState<Promise<string | null> | null>(null);
+  const [reportHtml, setReportHtml] = useState<string | null>(null);
+
 
 
   // 👇 указываем источник "local" | "api" 
@@ -87,6 +96,10 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
         questions,
         loading,
         error,
+        reportPromise,
+        setReportPromise,
+        reportHtml,
+        setReportHtml,
       }}
     >
       {children}

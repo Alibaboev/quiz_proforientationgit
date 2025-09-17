@@ -4,7 +4,6 @@ import { Button } from "../ui/Button";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
 import { useLocale } from "next-intl";
-import { buildPrompt } from "@/utils/buildPrompt";
 import { getUTMParams } from "@/utils/getUTMParams";
 import { formatAnswers } from "@/utils/formatAnswers";
 import { trackEvent } from "@/utils/analytics";
@@ -15,7 +14,7 @@ export function LeadCaptureForm({
 }: {
   onSubmit: (data: { name: string; email: string }) => void;
 }) {
-  const { answers, setStep, role, level } = useQuiz();
+  const { answers, setStep, role, level, reportPromise, reportHtml, setReportHtml } = useQuiz();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const t = useTranslations("LeadCaptureForm");
@@ -24,7 +23,7 @@ export function LeadCaptureForm({
   let emailSendError = "";
 
 
-    const previewReport = (
+  const previewReport = (
     <div className="preview-content text-left text-gray-700 p-4 border rounded-lg bg-gray-50 blur-sm select-none">
       <h3 className="font-semibold mb-2">{t("preview.title")}</h3>
       <p className="mb-2">{t("preview.description")}</p>
@@ -40,102 +39,127 @@ export function LeadCaptureForm({
 
 
 
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  let emailSendError = "";
+  let bitrixSendError = "";
+  let reportError = "";
 
-    if (!role || !level) {
-      alert("Неможливо згенерувати звіт: відсутні роль або рівень.");
-      return;
+  try {
+    setLoading(true);
+
+    let finalHtml = reportHtml;
+
+    // ждём формирования отчёта, если ещё нет
+    if (!finalHtml && reportPromise) {
+      for (const delay of [0, 2000, 4000, 8000]) {
+        if (delay) await new Promise((r) => setTimeout(r, delay));
+        finalHtml = await Promise.race([
+          reportPromise,
+          new Promise<string | null>((resolve) =>
+            setTimeout(() => resolve(null), 5000)
+          ),
+        ]);
+        if (finalHtml) {
+          setReportHtml(finalHtml);
+          break;
+        }
+      }
     }
 
-    try {
-      setLoading(true);
+    if (!finalHtml) {
+      reportError = "Report generation error, the email was not sent.";
+      trackEvent("generate_report_error", { error_message: reportError });
+      sendEventToServer({ step: "generate_report_error", error_message: reportError } as any);
+    }
 
-      const finalPrompt = buildPrompt({ role, level, answers, locale: locale as "en" | "uk" | "ru" });
+    const tasks: Promise<any>[] = [];
 
-      let cleanedHtml = "";
-      let reportOk = false;
-
-      // 1. Генерация отчета
-      try {
-        const reportRes = await fetch("/api/report", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ promptText: finalPrompt }),
-        });
-
-        const reportData = await reportRes.json();
-        if (reportRes.ok && reportData?.report?.candidates?.[0]?.content?.parts?.[0]?.text) {
-          const rawText = reportData.report.candidates[0].content.parts[0].text;
-          cleanedHtml = rawText
-            .replace(/```html\s*/, "")
-            .replace(/```/, "")
-            .replace(/<head[\s\S]*?<\/head>/gi, "")
-            .replace(/<body[^>]*>/gi, "")
-            .replace(/<\/body>/gi, "")
-            .replace(/<\/?html[^>]*>/gi, "")
-            .trim();
-          reportOk = true;
-        }
-      } catch (err) {
-        console.error("❌ Report generation failed:", err);
-        emailSendError = "❌ Report generation failed. The email was not sent. ";
-      }
-
-      // 2. Отправка email
-      if (reportOk) {
-        try {
-          const emailRes = await fetch("/api/sendEmail", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              name,
-              email,
-              html: cleanedHtml,
-              subject: t("subject"),
-            }),
-          });
-          const emailData = await emailRes.json();
-          if (emailRes.ok) {
-            trackEvent("email_sent", { step: "email_sent ", type: "report" });
-          } else {
-            trackEvent("email_sent", { step: "email_sent ", type: "fallback" });
-          }
-        } catch (err) {
-          trackEvent("email_sent", { step: "email_sent ", type: "fallback" });
-          console.error("❌ Email send error:", err);
-        }
-      }
-
-      // 3. Отправка лида в Bitrix
-      try {
-        await fetch("/api/bitrix", {
+    // отправка email
+    if (finalHtml) {
+      tasks.push(
+        fetch("/api/sendEmail", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            title: "Quiz Lead",
             name,
             email,
-            source: "Proforientation quiz",
-            answers: emailSendError + formatAnswers(answers, locale as "en" | "uk" | "ru"),
-            utm: getUTMParams(),
+            html: finalHtml,
+            subject: t("subject"),
           }),
-        });
-      } catch (err) {
-        console.error("❌ Bitrix send error:", err);
-      }
-
-      setStep("thankyou");
-      onSubmit({ name, email });
-    } catch (err) {
-      trackEvent("contact_form_submit", { step: "contact_form_submit", status: "error" });
-      sendEventToServer({ step: "contact_form_submit" });
-      console.error("Error during submit:", err);
-    } finally {
-      setLoading(false);
+        })
+          .then(async (res) => {
+            if (res.ok) {
+              trackEvent("email_sent", { step: "email_sent", type: "report" });
+            } else {
+              emailSendError = "Email send returned non-OK status.";
+              trackEvent("email_sent", { step: "email_sent", type: "fallback", error_message: emailSendError });
+              sendEventToServer({ step: "email_sent", error_message: emailSendError } as any);
+            }
+            return res.json();
+          })
+          .catch((err) => {
+            emailSendError = (err as Error).message || "Unknown email send error";
+            trackEvent("email_sent", { step: "email_sent", type: "fallback", error_message: emailSendError });
+            sendEventToServer({ step: "email_send_error", error_message: emailSendError } as any);
+            console.error("❌ Email send error:", err);
+          })
+      );
     }
-  };
+
+    // отправка Bitrix
+    tasks.push(
+      fetch("/api/bitrix", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: "Quiz Lead",
+          name,
+          email,
+          source_id: "Proforientation quiz",
+          answers:
+            reportError + emailSendError + formatAnswers(answers, locale as "en" | "uk" | "ru"),
+          utm: getUTMParams(),
+        }),
+      })
+        .catch((err) => {
+          bitrixSendError = (err as Error).message || "Unknown Bitrix send error";
+          trackEvent("bitrix_send_error", { error_message: bitrixSendError });
+          sendEventToServer({ step: "bitrix_send_error", error_message: bitrixSendError } as any);
+          console.error("❌ Bitrix send error:", err);
+        })
+    );
+
+    await Promise.allSettled(tasks);
+
+
+    const leadPayload = {
+      step: "Lead_submit",
+      user_role: role,
+      education_level: level,
+      top_direction: answers[0]?.answer || "",
+      name,
+      email,
+    };
+    trackEvent("Lead_submit", leadPayload);
+    sendEventToServer(leadPayload);
+
+    setStep("thankyou");
+    onSubmit({ name, email });
+  } catch (err) {
+    trackEvent("contact_form_submit", {
+      step: "contact_form_submit",
+      status: "error",
+      error_message: (err as Error).message,
+    });
+    sendEventToServer({ step: "contact_form_submit", error_message: (err as Error).message } as any);
+    console.error("Error during submit:", err);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <div className="quiz-container text-left">

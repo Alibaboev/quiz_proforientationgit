@@ -19,8 +19,15 @@ export function EducationLevelSelection() {
   const handleSelect = (level: string) => {
     setLevel(level);
     setStep("personalization");
-    trackEvent("quiz_start", { step: "quiz_start" });
-    sendEventToServer({ step: "quiz_start" });
+
+    const payload = {
+      step: "Quiz_start",
+      user_role: role,
+      education_level: level,
+    };
+
+    trackEvent("Quiz_start", payload);
+    sendEventToServer(payload);
   };
 
   return (
