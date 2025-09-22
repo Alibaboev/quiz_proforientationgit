@@ -12,7 +12,6 @@ import {
 import { Link } from "@nextui-org/link";
 import { siteConfig } from "@/config/site";
 import NextLink from "next/link";
-import { Logo } from "@/components/icons";
 import { CiInstagram, CiYoutube } from "react-icons/ci";
 import { PiTiktokLogoLight } from "react-icons/pi";
 import LanguageSwitch from "@/components/languageSwitch";
@@ -20,6 +19,7 @@ import { AiFillInstagram, AiFillYoutube } from "react-icons/ai";
 import { RiTiktokFill } from "react-icons/ri";
 import { acceptedLanguages } from "@/components/data";
 import { useLocale } from "next-intl";
+import Image from "next/image";
 
 
 
@@ -32,22 +32,34 @@ export const Navbar = () => {
       shouldHideOnScroll={true}
       position="sticky"
       maxWidth="xl"
-      className="bg-[#153060]"
+      className="bg-[#f6fcff]"
     >
       <NavbarContent className="basis-1/5 sm:basis-full" justify="start">
         <NavbarBrand as="li" className="gap-3 max-w-fit">
           <NextLink className="flex justify-start items-center gap-1" href="https://www.medstudy.cz/">
-            <Logo />
+            <div className="flex items-center">
+              <Image
+                src="/logo.svg"
+                alt="Logo"
+                width={24}
+                height={24}
+                priority
+              />
+              <span className="ml-[5px] text-[20px] font-extrabold" style={{ color: "#153060" }}>
+                medstudy
+              </span>
+            </div>
+
           </NextLink>
         </NavbarBrand>
       </NavbarContent>
 
-      <NavbarMenuToggle aria-label="Toggle menu" className="lg:hidden text-white" />
+      <NavbarMenuToggle aria-label="Toggle menu" className="lg:hidden text-[#153060]" />
 
       <NavbarMenu className="py-5 h-full">
 
         <NavbarItem>
-          <div className="flex flex-row justify-around items-center pb-5 text-[#184C99]">
+          <div className="flex flex-row justify-around items-center pb-5 text-[#153060]">
             {acceptedLanguages.map((l) => (
               <NextLink key={l} href={`/${l}`}>
                 <p
@@ -62,7 +74,7 @@ export const Navbar = () => {
         </NavbarItem>
 
         <div className="h-full flex flex-col justify-between items-center">
-          <div className="text-center flex flex-col justify-center text-[#184C99] pb-5 grow">
+          <div className="text-center flex flex-col justify-center text-[#153060] pb-5 grow">
             <NavbarMenuItem className="mb-5">
               <a href={`tel:${siteConfig.contacts.telcz.split(" ").join("")}`}>
                 <p className="text-3xl">{siteConfig.contacts.telcz}</p>
@@ -86,13 +98,13 @@ export const Navbar = () => {
 
             <NavbarMenuItem className="w-full flex items-center justify-center py-10">
               <Link isExternal href={siteConfig.links.inst} aria-label="Instagram">
-                <AiFillInstagram className="w-12 h-12 mx-3 text-[#184C99]" />
+                <AiFillInstagram className="w-12 h-12 mx-3 text-[#153060]" />
               </Link>
               <Link isExternal href={siteConfig.links.youtube} aria-label="Youtube">
-                <AiFillYoutube className="w-12 h-12 mx-3 text-[#184C99]" />
+                <AiFillYoutube className="w-12 h-12 mx-3 text-[#153060]" />
               </Link>
               <Link isExternal href={siteConfig.links.tiktok} aria-label="Tiktok">
-                <RiTiktokFill className="w-12 h-12 mx-3 text-[#184C99]" />
+                <RiTiktokFill className="w-12 h-12 mx-3 text-[#153060]" />
               </Link>
             </NavbarMenuItem>
           </div>

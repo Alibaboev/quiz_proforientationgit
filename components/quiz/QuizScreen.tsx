@@ -37,25 +37,24 @@ export function QuizScreen() {
     if (!current) return;
 
     const answerValue = typeof opt === "string" ? opt : opt.answers[0];
-    const questionId = `q${currentIndex}`;
+    const questionId = `${currentIndex + 1}`;
 
     setAnswers([...answers, { question: questionId, answer: answerValue }]);
 
     const payload = {
-      step: "Question_answered",
-      question: questionId,
+      step: "quiz_step_complete",
+      step_number: questionId,
       question_text: current.question,
       answer: answerValue,
     };
 
-    trackEvent("Question_answered", payload);
+    trackEvent("quiz_step_complete", payload);
     await sendEventToServer(payload);
 
     if (currentIndex + 1 < questionList.length) {
       setCurrentIndex(currentIndex + 1);
       setInputValue("");
     } else {
-      // 📌 генерим промис отчета
       const finalPrompt = buildPrompt({ role: role!, level: level!, answers: [...answers, { question: `q${currentIndex}`, answer: opt }], locale: locale as "en" | "uk" | "ru" });
 
       const reportPromise = (async () => {
@@ -86,7 +85,7 @@ export function QuizScreen() {
 
       const quizCompletePayload = {
         step: "Quiz_complete",
-        completion_time: Math.round(performance.now() / 1000), 
+        completion_time: Math.round(performance.now() / 1000),
         user_role: role,
         education_level: level,
       };
@@ -95,19 +94,21 @@ export function QuizScreen() {
       sendEventToServer(quizCompletePayload);
 
 
-      setStep("form"); 
+      setStep("form");
     }
   };
 
   if (!current) return null;
 
   return (
-    <div className="quiz-container">
-      <ProgressBar current={currentIndex + 1} total={questionList.length} />
-      <p className="text-sm text-gray-500 mb-4">
+    <div className="quiz-container text-[#153060]">
+      <div className="flex justify-center">
+        <ProgressBar current={currentIndex + 1} total={questionList.length} />
+      </div>
+      <p className="text-sm mb-4">
         {t("progress", { current: currentIndex + 1, total: questionList.length })}
       </p>
-      <h2 className="text-xl sm:text-2xl font-semibold text-center mb-6">
+      <h2 className="text-xl sm:text-2xl font-bold text-left mb-6">
         {current.question}
       </h2>
 
@@ -128,7 +129,7 @@ export function QuizScreen() {
       {current.type === "open-ended" && (
         <div>
           <textarea
-            className="w-full p-3 border border-gray-300 rounded-lg text-base resize-y focus:outline-none focus:ring-2 focus:ring-[#00C0FD] focus:border-[#00C0FD] bg-gray-50"
+            className="w-full p-3 border-2 border-[#C3E5F7] rounded-lg text-base resize-y focus:outline-none focus:ring-[#00C0FD] focus:border-[#00C0FD] bg-gray-50"
             rows={4}
             placeholder={t("placeholder")}
             value={inputValue}
@@ -136,7 +137,7 @@ export function QuizScreen() {
           />
           <Button
             className="btn btn-primary w-full sm:w-auto mt-3"
-            disabled={inputValue.trim().length < 1}
+            disabled={inputValue.trim().length < 5}
             onClick={() => handleAnswer(inputValue.trim())}
           >
             {t("buttonNext")}

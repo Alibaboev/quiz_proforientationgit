@@ -1,19 +1,17 @@
 {
   "StartScreen": {
-    "title": "🎯 Choose your dream profession and university in the Czech Republic — in 5 minutes",
+    "title": "Choose your dream profession and university in the Czech Republic — in 5 minutes",
     "description": "Answer 7 simple questions and get a selection of specialties and universities that suit you best. Over 1000 applicants have already found their path with our AI test.",
     "button": "Start Test",
     "footer": "AI and our consultants have already helped hundreds of students enroll on a budget in the Czech Republic.",
-    "feature1": "✅ Free",
-    "feature2": "⏱ Only 5 minutes",
-    "feature3": "🎓 Expert recommendations"
+    "feature1": "Free",
+    "feature2": "Only 5 minutes",
+    "feature3": "Expert recommendations"
   },
   "RoleSelection": {
     "title": "Who is taking the test now?",
     "student": "I am a student",
-    "parent": "I am a parent",
-    "studentIcon": "🎓",
-    "parentIcon": "👨‍👩‍👧‍👦"
+    "parent": "I am a parent"
   },
   "EducationLevelSelection": {
     "student": {

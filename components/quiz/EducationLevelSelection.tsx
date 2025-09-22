@@ -31,8 +31,8 @@ export function EducationLevelSelection() {
   };
 
   return (
-    <div className="quiz-container">
-      <h2 className="mb-6">{t(`${role}.title`)}</h2>
+    <div className="quiz-container mt-10 mb-10 text-[#153060]">
+      <h2 className="mb-6 text-[22px] font-bold">{t(`${role}.title`)}</h2>
       <div className="grid grid-cols-1 gap-4">
         {levels.map((level) => (
           <AnswerButton

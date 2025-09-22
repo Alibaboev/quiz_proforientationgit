@@ -20,8 +20,8 @@ export function AnswerButton({
       onClick={onClick}
       disabled={disabled}
       className={clsx(
-        "border-2 border-gray-200 rounded-lg bg-gray-50 transition-colors hover:border-[#00C0FD] hover:bg-gray-100 w-full p-4 text-left font-medium",
-        disabled && "opacity-60 cursor-not-allowed",
+        "w-full p-4 text-left font-medium border-2 rounded-[16px] bg-white transition-colors border-[#C3E5F7] hover:border-[#1BACFE] hover:bg-[#EDF9FF] text-[#153060]",
+        disabled && "cursor-not-allowed",
         className
       )}
     >

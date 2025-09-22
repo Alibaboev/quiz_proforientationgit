@@ -2,11 +2,15 @@ import { getSessionId } from "./analytics";
 import { getUTMParams } from "./getUTMParams";
 
 type EventPayload = {
-  step: string;
+  step?: string;
   question?: string;
   answer?: string;
   status?: string;
   type?: string;
+  user_role?: string | null;
+  education_level?: string | null;
+  name?: string,
+  email?: string,
 };
 
 export const sendEventToServer = async (payload: EventPayload) => {

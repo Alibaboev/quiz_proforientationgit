@@ -2,13 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-body, html {
-    height: 100%;
+body,
+html {
+    min-height: 100%;
+    overscroll-behavior: none; 
 }
 
 .gradientBorderFix {
     background: linear-gradient(#1A3B76, #1A3B76) padding-box,
-                linear-gradient(to right, #415c8d, #132A55) border-box;
+        linear-gradient(to right, #415c8d, #132A55) border-box;
     border-radius: 1em;
     border: 1px solid transparent;
 
