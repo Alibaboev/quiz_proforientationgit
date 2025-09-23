@@ -1,6 +1,7 @@
 import { promptsData, langInstructions, Locale, PromptKey } from "@/dictionaries/promptsDictionary";
 import type { Answer } from "@/context/QuizContext";
 import { DirectionType, educationalInstitutionsDictionary, SchoolDirectionType } from "@/dictionaries/educationalInstitutionsDictionary";
+import { formatAnswers } from "./formatAnswers";
 
 function joinTemplateFields(template: Record<string, string>): string {
   return Object.values(template).join("\n\n");
@@ -70,16 +71,7 @@ ${templateText}
 ---
 
 Вот ответы пользователя:
-${answers
-      .map((a) => {
-        const tagsText = a.tags
-          ?.map((tag) => dirLabels[tag as keyof typeof dirLabels] ?? tag)
-          .filter(Boolean)
-          .join(", ") || "нет";
-
-        return `Вопрос: "${a.question}"\nОтвет: "${a.answer}"\nТеги: ${tagsText}`;
-      })
-      .join("\n\n")}
+${formatAnswers(answers, locale)}
   
   Университети:
 ${uniList.map(u => `${u.name}: ${u.faculties.join(", ")}`).join("\n")}

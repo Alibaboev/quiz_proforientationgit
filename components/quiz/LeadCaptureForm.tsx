@@ -4,133 +4,211 @@ import { Button } from "../ui/Button";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
 import { useLocale } from "next-intl";
-import { buildPrompt } from "@/utils/buildPrompt";
+import { getUTMParams } from "@/utils/getUTMParams";
+import { formatAnswers } from "@/utils/formatAnswers";
+import { trackEvent } from "@/utils/analytics";
+import { sendEventToServer } from "@/utils/sendEvent";
 
 export function LeadCaptureForm({
   onSubmit,
 }: {
   onSubmit: (data: { name: string; email: string }) => void;
 }) {
-  const { answers, setStep, role, level } = useQuiz();
+  const { answers, setStep, role, level, reportPromise, reportHtml, setReportHtml } = useQuiz();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const t = useTranslations("LeadCaptureForm");
   const locale = useLocale() || "uk";
+  const [loading, setLoading] = useState(false);
 
   const previewReport = (
-    <div className="preview-content text-left text-gray-700 p-4 border rounded-lg bg-gray-50 blur-sm select-none">
-      <h3 className="font-semibold mb-2">{t("preview.title")}</h3>
-      <p className="mb-2">{t("preview.description")}</p>
-      <h4 className="font-semibold mb-2">{t("preview.schoolsTitle")}</h4>
-      <ul className="list-disc list-inside mb-2">
+    <div className="preview-content mb-2 text-left text-gray-700 p-4 border rounded-lg bg-gray-50 blur-sm select-none text-sm">
+      <h3 className="font-semibold mb-2 text-base">{t("preview.title")}</h3>
+      <p className="mb-2 text-sm">{t("preview.description")}</p>
+      <h4 className="font-semibold mb-2 text-sm">{t("preview.schoolsTitle")}</h4>
+      <ul className="list-disc list-inside mb-2 text-xs">
         <li>{t("preview.schools1")}</li>
         <li>{t("preview.schools2")}</li>
         <li>{t("preview.schools3")}</li>
       </ul>
-      <small className="text-gray-500">{t("preview.note")}</small>
+      <small className="text-gray-500 text-xs">{t("preview.note")}</small>
     </div>
   );
 
-  const [loading, setLoading] = useState(false);
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!role || !level) {
-      alert("Невозможно сгенерировать отчёт: отсутствуют роль или уровень.");
-      return;
-    }
+    let emailSendError = "";
+    let bitrixSendError = "";
+    let reportError = "";
 
     try {
-      setLoading(true); 
+      setLoading(true);
 
-      const finalPrompt = buildPrompt({ role, level, answers, locale: locale as "en" | "uk" | "ru" });
+      let finalHtml = reportHtml;
 
-      const reportRes = await fetch("/api/report", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ promptText: finalPrompt }),
-      });
+      if (!finalHtml && reportPromise) {
+        for (const delay of [0, 2000, 4000, 8000]) {
+          if (delay) await new Promise((r) => setTimeout(r, delay));
+          finalHtml = await Promise.race([
+            reportPromise,
+            new Promise<string | null>((resolve) =>
+              setTimeout(() => resolve(null), 5000)
+            ),
+          ]);
+          if (finalHtml) {
+            setReportHtml(finalHtml);
+            break;
+          }
+        }
+      }
 
-      const reportData = await reportRes.json();
-      if (!reportRes.ok) throw new Error(reportData?.error || "Report generation failed");
+      if (!finalHtml) {
+        reportError = "Report generation error, the email was not sent.";
+        trackEvent("generate_report_error", { error_message: reportError });
+        sendEventToServer({ step: "generate_report_error", error_message: reportError } as any);
+      }
 
-      let rawText = reportData.report?.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const cleanedHtml = rawText
-        .replace(/```html\s*/, "")
-        .replace(/```/, "")
-        .replace(/<head[\s\S]*?<\/head>/gi, "")
-        .replace(/<body[^>]*>/gi, "")
-        .replace(/<\/body>/gi, "")
-        .replace(/<\/?html[^>]*>/gi, "")
-        .trim();
+      const tasks: Promise<any>[] = [];
 
-      const emailRes = await fetch("/api/sendEmail", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          html: cleanedHtml,
-          subject: t("subject"),
-        }),
-      });
+      //  email
+      if (finalHtml) {
+        tasks.push(
+          fetch("/api/sendEmail", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name,
+              email,
+              html: finalHtml,
+              subject: t("subject"),
+            }),
+          })
+            .then(async (res) => {
+              if (res.ok) {
+                trackEvent("email_sent", { step: "email_sent", type: "report" });
+              } else {
+                emailSendError = "Email send returned non-OK status.";
+                trackEvent("email_sent", { step: "email_sent", type: "fallback", error_message: emailSendError });
+                sendEventToServer({ step: "email_sent", error_message: emailSendError } as any);
+              }
+              return res.json();
+            })
+            .catch((err) => {
+              emailSendError = (err as Error).message || "Unknown email send error";
+              trackEvent("email_sent", { step: "email_sent", type: "fallback", error_message: emailSendError });
+              sendEventToServer({ step: "email_send_error", error_message: emailSendError } as any);
+              console.error("❌ Email send error:", err);
+            })
+        );
+      }
 
-      const emailData = await emailRes.json();
-      if (!emailRes.ok) throw new Error(emailData?.error || "Email sending failed");
+      //  Bitrix
+      tasks.push(
+        fetch("/api/bitrix", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: "Quiz Lead",
+            name,
+            email,
+            source_id: "23",
+            answers:
+              reportError + emailSendError + formatAnswers(answers, locale as "en" | "uk" | "ru"),
+            utm: getUTMParams(),
+          }),
+        })
+          .catch((err) => {
+            bitrixSendError = (err as Error).message || "Unknown Bitrix send error";
+            trackEvent("bitrix_send_error", { error_message: bitrixSendError });
+            sendEventToServer({ step: "bitrix_send_error", error_message: bitrixSendError } as any);
+            console.error("❌ Bitrix send error:", err);
+          })
+      );
+
+      await Promise.allSettled(tasks);
+
+
+      const leadPayload = {
+        step: "Lead_submit",
+        user_role: role,
+        education_level: level,
+        name,
+        email,
+      };
+      trackEvent("Lead_submit", leadPayload);
+      sendEventToServer(leadPayload);
 
       setStep("thankyou");
+      onSubmit({ name, email });
     } catch (err) {
-      console.error("Error during report generation or email sending:", err);
+      trackEvent("contact_form_submit", {
+        step: "contact_form_submit",
+        status: "error",
+        error_message: (err as Error).message,
+      });
+      sendEventToServer({ step: "contact_form_submit", error_message: (err as Error).message } as any);
+      console.error("Error during submit:", err);
     } finally {
-      setLoading(false); 
+      setLoading(false);
     }
-
-    onSubmit({ name, email });
   };
 
 
   return (
-    <div className="quiz-container text-left">
-      <h2 className="text-center text-lg sm:text-xl font-semibold mb-2">{t("title")}</h2>
-      <p className="text-center text-gray-700 mb-6">{t("subtitle")}</p>
-
-      <div className="preview-wrap mb-4">
-        {previewReport}
-        <span className="preview-label text-sm text-gray-500 block mt-1 text-center">
-          {t("previewLabel")}
-        </span>
-      </div>
-
-      <ul className="list-disc list-inside mb-6 text-gray-700">
-        <li>{t("listItem1")}</li>
-        <li>{t("listItem2")}</li>
-        <li>{t("listItem3")}</li>
+    <div className="quiz-container mt-5 mb-5 text-[#153060] text-left">
+      <h2 className="text-center text-2xl sm:text-2xl font-bold mb-4">{t("title")}</h2>
+      <p className="mb-2">{t("subtitle")}</p>
+      {previewReport}
+      <h3 className="mb-2">{t("previewLabel")}</h3>
+      <ul className="list-none mb-2 font-semibold space-y-1">
+        <li className="flex items-center">
+          <img src="/checkCircle.svg" alt="check" className="w-4 h-4 mr-2" />
+          {t("listItem1")}
+        </li>
+        <li className="flex items-center">
+          <img src="/checkCircle.svg" alt="check" className="w-4 h-4 mr-2" />
+          {t("listItem2")}
+        </li>
+        <li className="flex items-center">
+          <img src="/checkCircle.svg" alt="check" className="w-4 h-4 mr-2" />
+          {t("listItem3")}
+        </li>
       </ul>
-
-      <p className="text-xs text-gray-500 mb-6 text-center">{t("privacyNote")}</p>
+      <small className="text-[14px]">{t("privacyNote")}</small>
 
       <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block font-semibold mb-2">{t("form.nameLabel")}</label>
+        <div className="mb-4 mt-4">
           <input
             type="text"
-            className="form-input w-full px-3 py-3 border border-gray-300 rounded text-base"
+            className="w-full p-3 border-2 border-[#C3E5F7] rounded-[16px] text-base font-semibold bg-gray-50 
+               placeholder-[#153060]/80 
+               focus:outline-none focus:ring-[#00C0FD] focus:border-[#00C0FD] 
+               hover:border-[#00C0FD]"
             required
+            placeholder={t("form.nameLabel")}
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
         </div>
+
         <div className="mb-6">
-          <label className="block font-semibold mb-2">{t("form.emailLabel")}</label>
           <input
             type="email"
-            className="form-input w-full px-3 py-3 border border-gray-300 rounded text-base"
+            className="w-full p-3 border-2 border-[#C3E5F7] rounded-[16px] text-base font-semibold bg-gray-50 
+               placeholder-[#153060]/80 
+               focus:outline-none focus:ring-[#00C0FD] focus:border-[#00C0FD] 
+               hover:border-[#00C0FD]"
             required
+            placeholder={t("form.emailLabel")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
         </div>
+
         <div className="flex justify-center">
           <Button type="submit" className="btn btn-primary text-lg px-8 py-3" disabled={loading}>
             {loading ? t("form.sending") : t("form.submit")}

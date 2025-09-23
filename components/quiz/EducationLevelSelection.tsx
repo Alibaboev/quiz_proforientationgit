@@ -3,6 +3,8 @@ import React from "react";
 import { AnswerButton } from "../ui/AnswerButton";
 import { useTranslations } from "next-intl";
 import { useQuiz } from "@/context/QuizContext";
+import { trackEvent } from "@/utils/analytics";
+import { sendEventToServer } from "@/utils/sendEvent";
 
 export function EducationLevelSelection() {
   const t = useTranslations("EducationLevelSelection");
@@ -11,18 +13,26 @@ export function EducationLevelSelection() {
   if (loading) return <p>Loading...</p>;
   if (error || !questions || !role) return <p>Error loading questions</p>;
 
-  /*   const levels = Object.keys(questions [role] || {}) as string[]; */
   const levels = Object.keys((questions as Record<string, any>)?.[role] || {});
 
 
   const handleSelect = (level: string) => {
     setLevel(level);
     setStep("personalization");
+
+    const payload = {
+      step: "Quiz_start",
+      user_role: role,
+      education_level: level,
+    };
+
+    trackEvent("Quiz_start", payload);
+    sendEventToServer(payload);
   };
 
   return (
-    <div className="quiz-container">
-      <h2 className="mb-6">{t(`${role}.title`)}</h2>
+    <div className="quiz-container mt-10 mb-10 text-[#153060]">
+      <h2 className="mb-6 text-[22px] font-bold">{t(`${role}.title`)}</h2>
       <div className="grid grid-cols-1 gap-4">
         {levels.map((level) => (
           <AnswerButton

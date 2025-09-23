@@ -17,7 +17,7 @@ export function PersonalizationScreen() {
   }, [setStep, setCurrentIndex]);
 
   return (
-    <div className="quiz-container text-center">
+    <div className="quiz-container text-center text-[#153060]">
       <div className="loader"></div>
       <p className="font-semibold mt-4">{t("loading")}</p>
     </div>

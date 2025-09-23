@@ -22,15 +22,15 @@ export function Button({
   disabled = false,
 }: ButtonProps) {
   const baseStyles =
-    "btn inline-block text-center font-semibold rounded-lg transition cursor-pointer border w-full max-w-md";
+    "btn inline-block text-center font-semibold transition cursor-pointer w-full max-w-md";
 
   const variants: Record<string, string> = {
     primary:
-      "bg-[#153060] text-white border-transparent hover:bg-[#00C0FD] hover:text-white",
+      "text-white rounded-[16px] bg-gradient-to-b from-[#07C3FD] to-[#3093FF] hover:from-[#3093FF] hover:to-[#07C3FD]",
     secondary:
-      "bg-gray-200 text-gray-800 border-gray-200 hover:bg-gray-300 hover:text-gray-900",
+      "bg-gray-200 text-gray-800 hover:bg-gray-300 hover:text-gray-900 rounded-lg",
     outline:
-      "bg-transparent text-[#153060] border-[#153060] hover:bg-[#153060] hover:text-white",
+      "bg-transparent text-[#153060] hover:bg-[#153060] hover:text-white rounded-lg",
   };
 
   const sizes: Record<string, string> = {
