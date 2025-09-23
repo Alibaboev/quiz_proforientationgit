@@ -1,4 +1,4 @@
-# Medstudy лэндинг
+# Medstudy quiz
 
 /quiz - тест проф ориентации - TODO
 
