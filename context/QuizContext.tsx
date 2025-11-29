@@ -1,8 +1,9 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getQuestions, type QuizSource } from "@/services/quizService";
-import type { QuestionBank } from "@/dictionaries/quizDictionary";
+import { getQuestions, getSanityQuiz, type QuizSource } from "@/services/quizService";
+import type { QuestionBankLanguage } from "@/dictionaries/quizDictionary";
 import { useLocale } from "next-intl";
+import type { Quiz as SanityQuiz } from "@/sanity/lib/types";
 
 
 export type Answer = {
@@ -26,7 +27,7 @@ type QuizContextType = {
   currentIndex: number;
   setCurrentIndex: (index: number) => void;
   currentQuestion: any | null;
-  questions: QuestionBank | null;
+  questions: QuestionBankLanguage | null;
   loading: boolean;
   error: string | null;
   reportPromise: Promise<string | null> | null;
@@ -35,11 +36,29 @@ type QuizContextType = {
   >;
   reportHtml: string | null;
   setReportHtml: React.Dispatch<React.SetStateAction<string | null>>;
+  sanityQuiz: SanityQuiz | null;
+  setSanityQuiz: React.Dispatch<React.SetStateAction<SanityQuiz | null>>;
 };
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
-export function QuizProvider({ children }: { children: React.ReactNode }) {
+interface QuizProviderProps {
+  children: React.ReactNode;
+  quizSource?: QuizSource;
+  sanitySlug?: string;
+}
+
+export function QuizProvider({
+  children,
+  quizSource,
+  sanitySlug
+}: QuizProviderProps) {
+  // Читаем источник данных из env или используем переданный пропс
+  const envQuizSource = process.env.NEXT_PUBLIC_QUIZ_SOURCE as QuizSource | undefined;
+
+  // Приоритет: пропсы > env > default "local"
+  const finalQuizSource = quizSource || envQuizSource || "local";
+  const finalSanitySlug = sanitySlug; // Опциональный, если не задан - берется первый квиз
   const [step, setStep] = useState<Step>("start");
   const [role, setRole] = useState<string | null>(null);
   const [level, setLevel] = useState<string | null>(null);
@@ -47,35 +66,47 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [questions, setQuestions] = useState<QuestionBank | null>(null);
+  const [questions, setQuestions] = useState<QuestionBankLanguage | null>(null);
   const [reportPromise, setReportPromise] = useState<Promise<string | null> | null>(null);
   const [reportHtml, setReportHtml] = useState<string | null>(null);
+  const [sanityQuiz, setSanityQuiz] = useState<SanityQuiz | null>(null);
 
-
-
-  // 👇 указываем источник "local" | "api" 
-
-  const source: QuizSource = "local";
   const locale = useLocale() || "uk";
 
   useEffect(() => {
-    setLoading(true);
-    getQuestions(source, locale)
-      .then((data) => {
+    const loadQuizData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Если используем Sanity, загружаем полные данные квиза
+        if (finalQuizSource === "sanity" && finalSanitySlug) {
+          const quiz = await getSanityQuiz(finalSanitySlug);
+          if (quiz) {
+            setSanityQuiz(quiz);
+          }
+        }
+
+        // Загружаем вопросы в формате приложения
+        const data = await getQuestions(finalQuizSource, locale, finalSanitySlug);
         setQuestions(data);
+      } catch (err: any) {
+        console.error("❌ Failed to load quiz data:", err);
+        setError(err.message || "Failed to load quiz data");
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message);
-        setLoading(false);
-      });
-  }, [source, locale]);
+      }
+    };
+
+    loadQuizData();
+  }, [finalQuizSource, locale, finalSanitySlug]);
 
 
   const currentQuestion =
-    role && level && questions?.[role as keyof QuestionBank] &&
-      (questions[role as keyof QuestionBank] as Record<string, any>)[level]
-      ? (questions[role as keyof QuestionBank] as Record<string, any>)[level][currentIndex]
+    role && level && questions &&
+      (questions as any)[role] &&
+      (questions as any)[role][level]
+      ? (questions as any)[role][level][currentIndex]
       : null;
 
 
@@ -100,6 +131,8 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
         setReportPromise,
         reportHtml,
         setReportHtml,
+        sanityQuiz,
+        setSanityQuiz,
       }}
     >
       {children}

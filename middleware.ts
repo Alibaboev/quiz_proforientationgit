@@ -9,6 +9,6 @@ export default createMiddleware({
 });
 
 export const config = {
-  // перехватываем все страницы, кроме служебных (_next, api, статика)
-  matcher: ['/((?!api|_next|.*\\..*).*)']
+  // перехватываем все страницы, кроме служебных (_next, api, статика, studio)
+  matcher: ['/((?!_next|api|studio|[^?]*\\.(?:jpg|jpeg|gif|svg|png|webp|ico|css|js)).*?)']
 };
