@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 export function QuizClientComponent({ dictionary, lang }: { dictionary: any; lang: string }) {
   const [data, setData] = useState<any>(null);
 
-  console.log("Received dictionary:", dictionary);
-
   useEffect(() => {
     if (dictionary) {
       setData(dictionary);

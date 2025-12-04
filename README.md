@@ -4,6 +4,8 @@ A modern, multilingual quiz application designed for professional orientation as
 
 ## Features
 
+- **Headless CMS**: Content management with Sanity CMS for easy quiz creation and updates
+- **Multiple Quiz Support**: Create unlimited quiz variations with custom prompts and questions
 - **Interactive Quiz System**: Engaging question-and-answer flow with progress tracking
 - **AI-Powered Analysis**: Integration with Google Gemini AI for intelligent result analysis
 - **Multi-language Support**: Available in English, Russian, and Ukrainian
@@ -16,6 +18,7 @@ A modern, multilingual quiz application designed for professional orientation as
 ## Technologies Used
 
 - [Next.js 14](https://nextjs.org/) - React framework with App Router
+- [Sanity CMS](https://www.sanity.io/) - Headless CMS for content management
 - [NextUI v2](https://nextui.org/) - Modern UI component library
 - [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS framework
 - [TypeScript](https://www.typescriptlang.org/) - Type-safe JavaScript
@@ -31,6 +34,7 @@ A modern, multilingual quiz application designed for professional orientation as
 
 - Node.js 18+
 - npm or yarn package manager
+- [Sanity account](https://www.sanity.io/) and project
 - SendGrid account and API key
 - Google Gemini API key
 
@@ -54,6 +58,14 @@ cp .env.example .env
 
 4. Configure your `.env` file with required credentials:
 ```env
+# Quiz Source: "local" (files) or "sanity" (CMS)
+NEXT_PUBLIC_QUIZ_SOURCE=local
+
+# Sanity CMS Configuration (only if QUIZ_SOURCE=sanity)
+NEXT_PUBLIC_SANITY_PROJECT_ID=your_sanity_project_id
+NEXT_PUBLIC_SANITY_DATASET=production
+SANITY_API_READ_TOKEN=your_sanity_token
+
 # Gemini AI Configuration
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_API_MODEL=gemini-1.5-flash
@@ -64,6 +76,10 @@ EMAIL_FROM=noreply@medstudy.cz
 EMAIL_FROM_NAME="Medstudy.cz | Quiz"
 EMAIL_REPLY_TO=sales@medstudy.cz
 ```
+
+5. Set up Sanity CMS:
+   - See [SANITY_GUIDE.md](./SANITY_GUIDE.md) for complete setup instructions and AI prompt configuration
+   - Access Sanity Studio at `http://localhost:3000/studio` after running dev server
 
 ### Development
 
@@ -94,9 +110,24 @@ The production server runs on port 5050 by default.
 .
 ├── app/                    # Next.js App Router
 │   ├── [locale]/          # Internationalized routes
-│   └── api/               # API routes
+│   ├── api/               # API routes
+│   └── studio/            # Sanity Studio interface
 ├── components/            # React components
 │   └── ui/               # UI components
+├── sanity/                # Sanity CMS configuration
+│   ├── schemas/          # Content schemas
+│   │   ├── quiz.ts      # Main quiz schema (role-based)
+│   │   ├── simpleQuestion.ts  # Question schema
+│   │   ├── university.ts      # University schema
+│   │   └── school.ts          # School schema
+│   └── lib/             # Sanity utilities
+│       ├── client.ts    # Sanity client
+│       ├── queries.ts   # GROQ queries
+│       ├── api.ts       # API functions
+│       └── types.ts     # TypeScript types
+├── services/             # Business logic
+│   ├── quizService.ts   # Quiz data service
+│   └── sanityAdapter.ts # Sanity to app format adapter
 ├── integrations/         # Third-party integrations
 │   ├── gemini.ts        # Google Gemini AI
 │   ├── email.ts         # SendGrid email
@@ -108,7 +139,9 @@ The production server runs on port 5050 by default.
 │   └── uk/             # Ukrainian
 ├── public/             # Static assets
 ├── styles/             # Global styles
-└── utils/              # Utility functions
+├── utils/              # Utility functions
+├── sanity.config.ts    # Sanity configuration
+└── SANITY_GUIDE.md     # Sanity setup and usage guide
 ```
 
 ## Available Scripts
@@ -136,6 +169,9 @@ Language detection is automatic based on browser preferences, with manual switch
 
 ## Integrations
 
+### Sanity CMS
+Headless content management system for creating and managing multiple quiz variations. Access the studio at `/studio` to create quizzes, questions, and customize AI prompts without code changes.
+
 ### Google Gemini AI
 Used for analyzing quiz responses and generating personalized career recommendations.
 
@@ -157,11 +193,16 @@ See `.env.example` for all available configuration options:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
+| `NEXT_PUBLIC_SANITY_PROJECT_ID` | Sanity project ID | Yes |
+| `NEXT_PUBLIC_SANITY_DATASET` | Sanity dataset (production/staging) | Yes |
+| `SANITY_API_READ_TOKEN` | Sanity API read token | Yes |
 | `GEMINI_API_KEY` | Google Gemini API key | Yes |
 | `SENDGRID_API_KEY` | SendGrid API key | Yes |
 | `EMAIL_FROM` | Sender email address | Yes |
 | `EMAIL_FROM_NAME` | Sender display name | Yes |
 | `EMAIL_REPLY_TO` | Reply-to email address | Yes |
+
+For detailed Sanity CMS setup instructions, see [SANITY_GUIDE.md](./SANITY_GUIDE.md).
 
 ## License
 
